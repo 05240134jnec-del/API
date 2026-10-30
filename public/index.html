@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow · Home</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+</head>
+<body class="home">
+  <div class="glow glow-a"></div>
+  <div class="glow glow-b"></div>
+
+  <header class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="logo"><span class="logo-mark">✓</span> TaskFlow</a>
+      <nav class="nav-links">
+        <a href="index.html" class="current">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-text">
+      <p class="greeting"><span id="greeting-text">Hello</span>, <span id="who">friend</span> <span class="wave">👋</span></p>
+      <h1>Tick. Done. <span>Repeat.</span></h1>
+      <p class="lead">Your calm to-do corner.</p>
+
+      <div class="pill" id="summary">
+        <span class="dot"></span><span id="summary-text">Checking...</span>
+      </div>
+
+      <div class="hero-actions">
+        <a href="dashboard.html" class="btn btn-primary">Open dashboard →</a>
+        <button class="btn btn-ghost" id="name-btn" type="button">Set name</button>
+      </div>
+
+      <form class="name-form" id="name-form" hidden>
+        <input type="text" id="name-input" maxlength="20" placeholder="Your first name" autocomplete="off" />
+        <button class="btn btn-primary" type="submit">Save</button>
+      </form>
+    </div>
+
+    <div class="ring-card">
+      <div class="ring" id="ring" style="--p: 0">
+        <div class="ring-inner">
+          <strong id="ring-num">0%</strong>
+          <span>done</span>
+        </div>
+      </div>
+      <h3>Up next</h3>
+      <ul class="mini-list" id="mini-list">
+        <li class="mini-empty">No tasks yet</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- the unique bit: a focus timer -->
+  <section class="timer">
+    <div class="timer-card" id="timer-card">
+      <div>
+        <div class="timer-label" id="timer-label">Focus timer</div>
+        <div class="timer-sub" id="timer-sub">25 minutes. One task. No distractions.</div>
+        <div class="timer-bar"><div id="timer-fill"></div></div>
+      </div>
+      <div class="timer-time" id="timer-time">25:00</div>
+      <div class="timer-actions">
+        <button class="btn btn-primary" id="timer-start" type="button">Start</button>
+        <button class="btn btn-ghost" id="timer-reset" type="button">Reset</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">SYD204 · Node.js · Express · MySQL</footer>
+
+  <script>
+    // Opened at :3000 -> same server. Opened with Live Server -> API on :3000.
+    const API_URL = location.port === '3000' ? '' : 'http://localhost:3000';
+
+    // ----- greeting -----
+    const hour = new Date().getHours();
+    document.getElementById('greeting-text').textContent =
+      hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+    // ----- name (saved in this browser only) -----
+    const who = document.getElementById('who');
+    const nameForm = document.getElementById('name-form');
+    const nameInput = document.getElementById('name-input');
+    const nameBtn = document.getElementById('name-btn');
+    function getName() { try { return localStorage.getItem('taskflow-name') || ''; } catch (e) { return ''; } }
+    function showName() { who.textContent = getName() || 'friend'; nameBtn.textContent = getName() ? 'Change name' : 'Set name'; }
+    nameBtn.addEventListener('click', () => { nameForm.hidden = !nameForm.hidden; nameInput.focus(); });
+    nameForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      try { localStorage.setItem('taskflow-name', nameInput.value.trim()); } catch (err) {}
+      showName(); nameForm.hidden = true;
+    });
+    showName();
+
+    // ----- live data: GET /tasks -----
+    const isDone = (t) => t.completed === true || t.completed === 1;
+
+    async function loadHome() {
+      const summaryText = document.getElementById('summary-text');
+      try {
+        const res = await fetch(API_URL + '/tasks');
+        if (!res.ok) throw new Error('bad status');
+        const tasks = await res.json();
+        const done = tasks.filter(isDone).length;
+        const pending = tasks.length - done;
+        const percent = tasks.length === 0 ? 0 : Math.round((done / tasks.length) * 100);
+
+        summaryText.textContent = tasks.length === 0 ? 'No tasks yet'
+          : pending === 0 ? 'All done 🎉'
+          : pending + ' to do · ' + done + ' done';
+
+        document.getElementById('ring').style.setProperty('--p', percent);
+        document.getElementById('ring-num').textContent = percent + '%';
+
+        const list = document.getElementById('mini-list');
+        list.innerHTML = '';
+        const next = tasks.filter((t) => !isDone(t)).slice(0, 3);
+        if (next.length === 0) list.innerHTML = '<li class="mini-empty">Nothing waiting ✨</li>';
+        next.forEach((t) => {
+          const li = document.createElement('li');
+          li.innerHTML = '<span class="tick"></span>';
+          const span = document.createElement('span');
+          span.textContent = t.title;
+          li.appendChild(span);
+          list.appendChild(li);
+        });
+      } catch (err) {
+        document.getElementById('summary').classList.add('offline');
+        summaryText.textContent = 'Server is off';
+      }
+    }
+    loadHome();
+
+    // ----- focus timer (25 minutes) -----
+    const TOTAL = 25 * 60 * 1000;
+    const card = document.getElementById('timer-card');
+    const timeEl = document.getElementById('timer-time');
+    const fillEl = document.getElementById('timer-fill');
+    const startBtn = document.getElementById('timer-start');
+    const labelEl = document.getElementById('timer-label');
+    const subEl = document.getElementById('timer-sub');
+    let remaining = TOTAL;     // milliseconds left
+    let endAt = 0;
+    let ticker = null;
+
+    function fmt(ms) {
+      const s = Math.max(0, Math.ceil(ms / 1000));
+      return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }
+    function draw() {
+      timeEl.textContent = fmt(remaining);
+      fillEl.style.width = ((TOTAL - remaining) / TOTAL * 100) + '%';
+      document.title = ticker ? fmt(remaining) + ' · Focus' : 'TaskFlow · Home';
+    }
+    function stop() { clearInterval(ticker); ticker = null; card.classList.remove('running'); startBtn.textContent = 'Start'; }
+    function tick() {
+      remaining = endAt - Date.now();
+      if (remaining <= 0) {
+        remaining = 0; stop();
+        card.classList.add('finished');
+        labelEl.textContent = 'Nice work!';
+        subEl.textContent = 'Time for a 5 minute break. 🌿';
+        startBtn.textContent = 'Again';
+      }
+      draw();
+    }
+    startBtn.addEventListener('click', () => {
+      if (ticker) { stop(); draw(); return; }            // pause
+      if (remaining <= 0) resetTimer();                    // start again
+      endAt = Date.now() + remaining;
+      ticker = setInterval(tick, 250);
+      card.classList.add('running');
+      startBtn.textContent = 'Pause';
+      labelEl.textContent = 'Focusing...';
+      subEl.textContent = 'Stay with one task.';
+    });
+    function resetTimer() {
+      stop(); remaining = TOTAL;
+      card.classList.remove('finished');
+      labelEl.textContent = 'Focus timer';
+      subEl.textContent = '25 minutes. One task. No distractions.';
+      draw();
+    }
+    document.getElementById('timer-reset').addEventListener('click', resetTimer);
+  </script>
+</body>
+</html>

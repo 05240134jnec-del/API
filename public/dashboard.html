@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow · Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="logo"><span class="logo-mark">✓</span> TaskFlow</a>
+      <nav class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="dashboard.html" class="current">Dashboard</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="page-head">
+      <h1>Dashboard</h1>
+      <p>Your tasks at a glance.</p>
+    </div>
+
+    <!-- stats cards (numbers are filled in by app.js) -->
+    <section class="stats">
+      <div class="stat">
+        <div class="stat-icon" style="background: var(--brand-soft)">📋</div>
+        <div><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total tasks</div></div>
+      </div>
+      <div class="stat">
+        <div class="stat-icon" style="background: var(--green-soft)">✅</div>
+        <div><div class="stat-num" id="stat-done">0</div><div class="stat-label">Completed</div></div>
+      </div>
+      <div class="stat">
+        <div class="stat-icon" style="background: var(--amber-soft)">⏳</div>
+        <div><div class="stat-num" id="stat-pending">0</div><div class="stat-label">Pending</div></div>
+      </div>
+    </section>
+
+    <section class="progress-card">
+      <div class="progress-top"><span>Overall progress</span><span id="progress-text">0%</span></div>
+      <div class="bar"><div class="bar-fill" id="progress-fill"></div></div>
+    </section>
+
+    <!-- task panel -->
+    <section class="panel">
+      <form id="task-form" class="add-form">
+        <input type="text" id="title-input" placeholder="Add a new task..." maxlength="255" autocomplete="off" />
+        <button type="submit" class="btn btn-primary">Add task</button>
+      </form>
+
+      <p id="message" class="message" role="status"></p>
+
+      <div class="toolbar">
+        <label class="search">
+          <input type="search" id="search-input" placeholder="Search tasks..." autocomplete="off" />
+        </label>
+        <div class="filters">
+          <button class="filter active" data-filter="all">All</button>
+          <button class="filter" data-filter="active">Active</button>
+          <button class="filter" data-filter="done">Done</button>
+        </div>
+      </div>
+
+      <ul id="task-list" class="task-list"></ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
