@@ -533,3 +533,31 @@ body.home .nav, body.home .hero, body.home .tip, body.home .steps, body.home .fo
 .timer-card.running .timer-time { color: var(--brand); }
 .timer-card.finished .timer-label { color: var(--green); }
 @media (max-width: 760px) { .hero h1 { font-size: 38px; } .swatches { display: none; } .timer-time { font-size: 48px; } }
+
+/* timer length picker */
+.timer-set { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.chip {
+  min-width: 42px; padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 14px; font-weight: 700;
+}
+.chip:hover { filter: brightness(1.15); }
+.chip.on { background: var(--brand); color: var(--on-brand); }
+.custom {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--input-bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 12px 3px 4px;
+  color: var(--muted); font-size: 14px;
+}
+.custom input {
+  width: 64px; padding: 5px 8px;
+  border: none; border-radius: 999px;
+  background: transparent; color: var(--text);
+  font-size: 15px; font-weight: 700; font-family: inherit; text-align: center;
+}
+.custom input:focus { outline: 2px solid color-mix(in srgb, var(--brand) 40%, transparent); }
+.timer-bar { margin-top: 14px; }

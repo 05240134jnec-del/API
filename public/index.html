@@ -62,6 +62,16 @@
       <div>
         <div class="timer-label" id="timer-label">Focus timer</div>
         <div class="timer-sub" id="timer-sub">25 minutes. One task. No distractions.</div>
+        <div class="timer-set">
+          <button class="chip" type="button" data-min="5">5</button>
+          <button class="chip" type="button" data-min="15">15</button>
+          <button class="chip" type="button" data-min="25">25</button>
+          <button class="chip" type="button" data-min="45">45</button>
+          <label class="custom">
+            <input type="number" id="timer-min" min="1" max="180" value="25" inputmode="numeric" aria-label="Minutes" />
+            <span>min</span>
+          </label>
+        </div>
         <div class="timer-bar"><div id="timer-fill"></div></div>
       </div>
       <div class="timer-time" id="timer-time">25:00</div>
@@ -137,42 +147,66 @@
     }
     loadHome();
 
-    // ----- focus timer (25 minutes) -----
-    const TOTAL = 25 * 60 * 1000;
+    // ----- focus timer (you choose the minutes) -----
     const card = document.getElementById('timer-card');
     const timeEl = document.getElementById('timer-time');
     const fillEl = document.getElementById('timer-fill');
     const startBtn = document.getElementById('timer-start');
     const labelEl = document.getElementById('timer-label');
     const subEl = document.getElementById('timer-sub');
+    const minInput = document.getElementById('timer-min');
+    const chips = document.querySelectorAll('.chip');
+    let minutes = 25;
+    let TOTAL = minutes * 60 * 1000;
     let remaining = TOTAL;     // milliseconds left
     let endAt = 0;
     let ticker = null;
 
     function fmt(ms) {
       const s = Math.max(0, Math.ceil(ms / 1000));
-      return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+      const m = Math.floor(s / 60);
+      return String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
     }
+    function idleText() { return minutes + (minutes === 1 ? ' minute' : ' minutes') + '. One task. No distractions.'; }
     function draw() {
       timeEl.textContent = fmt(remaining);
       fillEl.style.width = ((TOTAL - remaining) / TOTAL * 100) + '%';
       document.title = ticker ? fmt(remaining) + ' · Focus' : 'TaskFlow · Home';
     }
     function stop() { clearInterval(ticker); ticker = null; card.classList.remove('running'); startBtn.textContent = 'Start'; }
+
+    // choose how many minutes (1 to 180)
+    function setMinutes(value, save) {
+      const n = Number(value);
+      const m = (value === '' || isNaN(n)) ? 25 : Math.min(180, Math.max(1, Math.round(n)));
+      minutes = m; TOTAL = m * 60 * 1000; remaining = TOTAL;
+      stop();
+      card.classList.remove('finished');
+      labelEl.textContent = 'Focus timer';
+      subEl.textContent = idleText();
+      minInput.value = m;
+      chips.forEach((c) => c.classList.toggle('on', Number(c.dataset.min) === m));
+      if (save) { try { localStorage.setItem('taskflow-minutes', String(m)); } catch (e) {} }
+      draw();
+    }
+    chips.forEach((c) => c.addEventListener('click', () => setMinutes(c.dataset.min, true)));
+    minInput.addEventListener('change', () => setMinutes(minInput.value, true));
+    minInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { setMinutes(minInput.value, true); minInput.blur(); } });
+
     function tick() {
       remaining = endAt - Date.now();
       if (remaining <= 0) {
         remaining = 0; stop();
         card.classList.add('finished');
         labelEl.textContent = 'Nice work!';
-        subEl.textContent = 'Time for a 5 minute break. 🌿';
+        subEl.textContent = 'Time for a short break. 🌿';
         startBtn.textContent = 'Again';
       }
       draw();
     }
     startBtn.addEventListener('click', () => {
       if (ticker) { stop(); draw(); return; }            // pause
-      if (remaining <= 0) resetTimer();                    // start again
+      if (remaining <= 0) setMinutes(minutes, false);      // start again
       endAt = Date.now() + remaining;
       ticker = setInterval(tick, 250);
       card.classList.add('running');
@@ -180,14 +214,12 @@
       labelEl.textContent = 'Focusing...';
       subEl.textContent = 'Stay with one task.';
     });
-    function resetTimer() {
-      stop(); remaining = TOTAL;
-      card.classList.remove('finished');
-      labelEl.textContent = 'Focus timer';
-      subEl.textContent = '25 minutes. One task. No distractions.';
-      draw();
-    }
-    document.getElementById('timer-reset').addEventListener('click', resetTimer);
+    document.getElementById('timer-reset').addEventListener('click', () => setMinutes(minutes, false));
+
+    // remember the last chosen time
+    let saved = 25;
+    try { saved = Number(localStorage.getItem('taskflow-minutes')) || 25; } catch (e) {}
+    setMinutes(saved, false);
   </script>
 </body>
 </html>
