@@ -1,4 +1,4 @@
-# SYD204 Task List API: Step-by-Step Guide
+# API Practical: Step-by-Step Guide
 
 Same app, built three times: **Part 1** (memory) → **Part 2** (MySQL) → **Part 3** (MVC).
 A simple **frontend** (`public/`) lets you use the API from a web page.
